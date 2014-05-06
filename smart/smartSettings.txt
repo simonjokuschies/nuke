@@ -10,22 +10,22 @@
 
 
 #global switch smart on or off
-@smartOn=True
+@smartOn=
 
 #project path (again, please make sure that the path exists)
-@projectPath=/Users/simonjokuschies/Desktop/Projects
+@projectPath=
 
 #signature
-@artist=SJ
+@artist=
 
 #location of the nuke scripts inside project. make sure the project structure exists. otherwise nuke won't start because it can't find the folder
-@scriptPath=06_ApplicationData/Nuke/nuke_project
+@scriptPath=
 
 #location of the nuke renders inside project. make sure the project structure exists. otherwise nuke won't start because it can't find the folder
-@renderPath=06_ApplicationData/Nuke/from_nuke
+@renderPath=
 
 #if true then the normal save action will be overwritten with smart save so that every saving of the project will result in a new .nk file with current time
-@overwirteSaveWithSmartSave=False
+@overwirteSaveWithSmartSave=
 
 #show recent files drop down menu based on recent_files saved in .nuke dir
-@showRecentFiles=False
+@showRecentFiles=

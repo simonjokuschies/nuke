@@ -19,8 +19,8 @@
 ##########################################################################################################
 
 # paths - put in here your default path changes
-searchFor = "/Volumes/projects"
-replaceWith = "S:/nhb/Projects"
+searchFor = ""
+replaceWith = ""
 
 '''
 fileNodes

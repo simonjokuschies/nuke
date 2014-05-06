@@ -17,7 +17,7 @@
 #
 #  instalation
 #
-#  put script in nuke home directory
+#  put errorReport script in nuke home directory
 #  in init.py add this line (without "#"):
 #
 #  nuke.pluginAddPath("errorReport")

@@ -1,0 +1,31 @@
+###########################################################################################################
+#
+#  smart settings
+#  @author simon jokuschies
+#  @version 1.0
+#  Values driving smart globally. Change the settings with the smartValueSetter or do it manually right here in this file.
+#  Make sure that all values are correctly set otherwise nuke won't start
+#
+###########################################################################################################
+
+
+#global switch smart on or off
+@smartOn=True
+
+#project path (again, please make sure that the path exists)
+@projectPath=/Users/simonjokuschies/Desktop/Projects
+
+#signature
+@artist=SJ
+
+#location of the nuke scripts inside project. make sure the project structure exists. otherwise nuke won't start because it can't find the folder
+@scriptPath=06_ApplicationData/Nuke/nuke_project
+
+#location of the nuke renders inside project. make sure the project structure exists. otherwise nuke won't start because it can't find the folder
+@renderPath=06_ApplicationData/Nuke/from_nuke
+
+#if true then the normal save action will be overwritten with smart save so that every saving of the project will result in a new .nk file with current time
+@overwirteSaveWithSmartSave=False
+
+#show recent files drop down menu based on recent_files saved in .nuke dir
+@showRecentFiles=False

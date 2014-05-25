@@ -1,3 +1,5 @@
+import nuke 
+
 nuke.knobDefault('Root.fps', '25')
 nuke.knobDefault("Viewer.fps", "25")
 nuke.knobDefault("Root.format", "1920 1080 0 0 1920 1080 1 FullHD")
@@ -21,6 +23,6 @@ nuke.knobDefault("Viewer.freezeGuiWhenPlayBack", "1")
 nuke.knobDefault("Grain2.maskgrain", "False") 
 nuke.knobDefault("Card2.rows", "0.0")
 nuke.knobDefault("Card2.columns", "0.0")
-nuke.knobDefault("Blur.size", "1.0")
 nuke.knobDefault("Viewer.tile_color", "1128481791")
 nuke.knobDefault("Blur.mix", "1.0")
+nuke.knobDefault("Blur.size", "2.0")

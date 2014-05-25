@@ -24,6 +24,7 @@
 import nuke
 import os
 import helper
+import init
 
 global default_dir
 global knobInit
@@ -32,6 +33,7 @@ global ctrl
 default_dir = os.path.dirname(__file__)
 knobInit = default_dir+"/init.py"
 ctrl = False
+
 
 def checkExistingInit():
 	'''

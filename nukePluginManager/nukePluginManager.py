@@ -20,21 +20,20 @@
 #  nuke.pluginAddPath('nukePluginManager')
 #
 #  Please note:
-#  you need to put all of your scripts in sub folders in one directory like this:
+#  you need to put all of your scripts in sub folders in one python scripts directory like this:
 #
-#	pythonscripts
+#   PythonScriptsDirectory
 #		script01
-#			scriptcontent
+#			script01.py
 #			menu.py
 #		script02
-#			scriptcontent
+#			script02.py
 #			menu.py
 #		script02
-#			scriptcontent
+#			script03.py
 #			menu.py
 #
-#
-#  furthermore specify where the main python scripts directory is located. fill out the varible "scriptsPath" (below).
+#  furthermore specify where the main python scripts directory is located (variable called scriptPath).
 #  to exclude something to be loaded at all just rename your folder not to be included starting with an underscore or
 #  it to the dontInclude list (below).
 #
@@ -51,14 +50,24 @@ import platform
 import thread
 
 global scriptsPath
-global excludeSet
+global currentPref
 global dontInclude
 
+##################################### user specific variables ############################################
 
-scriptsPath = "/Users/%s/Dropbox/simons_stuff/_nuke/_NUKE_SIMON_MASTER/python" % getpass.getuser()
-excludeSet = os.getenv("HOME")+"/.nuke/pluginManager/excludeSet.txt"
+#here you can specify some variables. Please make sure to set the right scriptsPath. The other two
+#variables can be left as they are.
+
+#directory in which all your python scripts are located
+scriptsPath = "/Users/%s/Dropbox/simons_stuff/_nuke/_NUKE_SIMON_MASTER/python/" % getpass.getuser()
+
+#pluginManager preferences dir (leaving as it is should be fine, except you like to have it somewhere else)
+pluginManagerPrefsDir = os.getenv("HOME")+"/.nuke/pluginManagerPrefs"
+
+#don't include these folders and files in the script directory to be seen as a plugin in the plugin manager
 dontInclude = [".DS_Store", "nukePluginManager"]
 
+##########################################################################################################
 #no need to change anything from here. Edit only if you exactly know what you're doing.
 
 files=""
@@ -68,28 +77,45 @@ try:
 except:
 	nuke.pluginList=[]
 
-def initExcludeSet():
-	'''
-	make sure that the excludeSet and its directory exist
-	'''	
-	if not os.path.isfile(excludeSet):
-		if not os.path.isdir(os.path.dirname(excludeSet)):
-			os.makedirs(os.path.dirname(excludeSet))
-		loadExcludeSet = open(excludeSet,'w')
-		print loadExcludeSet
+currentPref = pluginManagerPrefsDir+"/currentPref.txt"
+prefsDir = pluginManagerPrefsDir+"/prefs/"
+loadSaveToggle=0
+prefs=[]
+prefsBtn=[]
+selDesel=0
 
-#  open text file, read in all lines and
-#  return an array with all the lines
+def initPL():
+	'''
+	make sure that the currentPref and prefs directory exist
+	load the prefs
+	'''	
+	if not os.path.isfile(currentPref):
+		if not os.path.isdir(os.path.dirname(currentPref)):
+			os.makedirs(os.path.dirname(currentPref))
+		loadCurrentPref = open(currentPref,'w')
+
+	if not os.path.isdir(prefsDir):
+		os.makedirs(os.path.dirname(prefsDir))
+
+	for prefFile in os.listdir(prefsDir):
+		if prefFile not in dontInclude:
+			fileN, fileExt = os.path.splitext(prefFile)
+			prefs.append(fileN)
+
 def openFileReturnArr(file):
-    arr=[]
-    fobj = open("%s"%file, "r")
-    #load in all lines
-    for line in fobj:
-        #delete word wrap at the end of each line
-        line=line.replace("\n", "")
-        arr.append(line)
-    fobj.close()
-    return arr
+	'''
+	open text file, read in all lines and
+	return an array with all the lines
+	'''
+	arr=[]
+	fobj = open("%s"%file, "r")
+	#load in all lines
+	for line in fobj:
+		#delete word wrap at the end of each line
+		line=line.replace("\n", "")
+		arr.append(line)
+	fobj.close()
+	return arr
 
 def getScripts(scriptsPath):
 	'''
@@ -105,103 +131,235 @@ def getScripts(scriptsPath):
 
 def initScripts():
 	
-	excludeList = openFileReturnArr(excludeSet)
+	excludeList = openFileReturnArr(currentPref)
 
 	if os.path.isdir(scriptsPath):
 		scripts = getScripts(scriptsPath)
 	 	for script in scripts:
 	 		if script not in excludeList:
-	 			nuke.pluginAddPath("{scriptsPath}/{script}".format(scriptsPath=scriptsPath, script=script))
+	 			nuke.pluginAddPath("{scriptsPath}/{script}".format(scriptsPath=os.path.dirname(scriptsPath), script=script))
 	else:
 		nuke.message("could'nt find the python script path")
 	
+def deletePrefs(panel):
+	'''
+	delete prefs
+	'''
+	
+	dpp = nuke.Panel('PluginManager - delete pref list')
+	for p in prefsBtn:
+		dpp.addBooleanCheckBox(p.name(), False)
+	
+	if dpp.show():
+		
+		for p in prefsBtn:
+			if dpp.value(p.name())==True:
+				try:
+					os.remove(prefsDir+p.name()+".txt")
+					panel.removeKnob(p)
+					prefs.remove(p.name())
+					prefsBtn.remove(p)
+				except:
+					print "Could not delete %s" % p.name()
+
 class PluginManagerPanel(nukescripts.PythonPanel):
-    '''
-    PluginManagerPanel
-    '''
+	'''
+	PluginManagerPanel
+	'''
 
-    def __init__( self ):
+	def __init__( self ):
         
-        nukescripts.PythonPanel.__init__(self, "PluginManager", "PluginManager")       
+		nukescripts.PythonPanel.__init__(self, "PluginManager", "PluginManager")       
         
-        scripts.reverse()
+		scripts.reverse()
 
-        #plugins
-    	for script in scripts:    		
-    		self.sc = nuke.Boolean_Knob(script, script ,"1") 
-    		self.sc.setFlag(nuke.STARTLINE)
-    		self.addKnob(self.sc)
-    		nuke.pluginList.append(self.sc)
-    	#other knobs
-    	self.div=nuke.Text_Knob("","","")
-    	self.div.setFlag(nuke.STARTLINE)
-    	self.deselectAll = nuke.Script_Knob("deselect all", "deselect all")
-    	self.selectAll = nuke.Script_Knob("select all", "select all")
-    	self.update = nuke.Script_Knob("update", "update")
-    	self.openExcludeSet = nuke.Script_Knob("open exclude set", "open exclude set")
-    	#add other knobs
-    	self.addKnob(self.div)
-    	self.addKnob(self.deselectAll)
-    	self.addKnob(self.selectAll)
-    	self.addKnob(self.update)
-    	self.addKnob(self.openExcludeSet)
+		#plugins
+		for script in scripts:
+			self.sc = nuke.Boolean_Knob(script, script ,"1") 
+			self.sc.setFlag(nuke.STARTLINE)
+			self.addKnob(self.sc)
+			nuke.pluginList.append(self.sc)
+		
+		#other knobs
+		self.div=nuke.Text_Knob("","","")
+		self.div.setFlag(nuke.STARTLINE)
+		self.div2=nuke.Text_Knob("","","")
+		self.div2.setFlag(nuke.STARTLINE)
+		self.div3=nuke.Text_Knob("","","")
+		self.div3.setFlag(nuke.STARTLINE)
+		self.selectDeselectAll = nuke.Script_Knob("select/deselect all", "select/deselect all")
+		self.openPrefDir = nuke.Script_Knob("open pref dir", "open pref dir")
+		self.openScriptsDir = nuke.Script_Knob("open scripts dir", "open scripts dir")
+		self.loadSave = nuke.Script_Knob("loadSave", "load/save")
+		self.update = nuke.Script_Knob("update", "<span style='color:green'>update<span>")
+		#add other knobs
+		self.addKnob(self.div)
+		self.addKnob(self.selectDeselectAll)
+		self.addKnob(self.openPrefDir)
+		self.addKnob(self.openScriptsDir)
+		self.addKnob(self.loadSave)
+		self.addKnob(self.update)
+		self.addKnob(self.div2)
 
-    	#deselect excluded knobs
-    	excludeList = openFileReturnArr(excludeSet)
-    	for pl in nuke.pluginList:
-    		if pl.name() in excludeList:
-    			pl.setValue(0)
-    	
-    def showModal( self ):
-        result = nukescripts.PythonPanel.showModalDialog(self)
-
-    def knobChanged( self, knob ): 
-        
-		if knob.name() == "deselect all":
-			for pl in nuke.pluginList:
+		#deselect excluded knobs
+		excludeList = openFileReturnArr(currentPref)
+		for pl in nuke.pluginList:
+			if pl.name() in excludeList:
 				pl.setValue(0)
 
-		if knob.name() == "select all":
-			for pl in nuke.pluginList:
-				pl.setValue(1)
+		#prefs
+		self.prefsName = nuke.String_Knob('name', '')
+		self.prefsName.setFlag(nuke.STARTLINE)
+		self.savePrefs = nuke.Script_Knob("save list", "save list")
+		self.deletePrefs = nuke.Script_Knob("delete list", "delete list")
+        
+		#prefsBtn
+		i=0
+		for p in prefs:
+			self.pknob = nuke.Script_Knob(p,p)
+			if i%5==0:
+				self.pknob.setFlag(nuke.STARTLINE)
+			prefsBtn.append(self.pknob)
+			i+=1
+
+	def showModal( self ):
+		result = nukescripts.PythonPanel.showModalDialog(self)
+		self.prefsName.setFlag(nuke.STARTLINE)
+
+	def knobChanged( self, knob ): 
+        
+		if knob.name() == "select/deselect all":
+			global selDesel
+			selDesel+=1
+			
+			if selDesel%2!=0:
+				for pl in nuke.pluginList:
+					pl.setValue(0)
+			else:
+				for pl in nuke.pluginList:
+					pl.setValue(1)
 
 		if knob.name() == "update":
 			#write new knobInit
 			try:
-				f = open(excludeSet,'w+')
+				f = open(currentPref,'w+')
 				for pl in nuke.pluginList:
 					if pl.getValue() == 0:
 						f.write("%s\n" % pl.name())	
 				f.close()
 			except:
-				nuke.message("an error occured while trying to edit the excludeSet file")
+				nuke.message("an error occured while trying to edit the currentPref file")
 
-			
 			if nuke.ask("Your nuke must be restarted before the updated plugin settings work. restart now?"):
 				thread.start_new_thread(killNuke, ())
 			
-		if knob.name() == "open exclude set":	
-			excludeSetDir = os.path.dirname(excludeSet)
-			if os.path.isdir(excludeSetDir):
+		if knob.name()=="loadSave":
+			global loadSaveToggle
+			loadSaveToggle+=1
+			
+			if loadSaveToggle%2==0:
+				self.removeKnob(self.prefsName)
+				self.removeKnob(self.savePrefs)
+				self.removeKnob(self.deletePrefs)
+				self.removeKnob(self.div3)
+				for pknob in prefsBtn:
+					self.removeKnob(pknob)
+			else:
+				self.addKnob(self.prefsName)
+				self.addKnob(self.savePrefs)
+				self.addKnob(self.deletePrefs)
+				self.addKnob(self.div3)
+				for pknob in prefsBtn:
+					self.addKnob(pknob)
+
+		if knob.name()=="save list":
+			listName=self.prefsName.getValue()
+			listName=listName.replace(" ","_")
+			newPrefFile=prefsDir+listName+".txt"
+			
+			if listName!="":
+				overwrite=True
+				if os.path.isfile(newPrefFile):
+					overwrite=False
+					if nuke.ask("name already exists. overwrite it?"):
+						overwrite=True
+				
+				if overwrite==True:
+					f = open(newPrefFile,'w+')
+					for n in nuke.pluginList:
+						if n.value()==False:
+							f.write(n.name()+"\n")    			
+
+					#refresh prefsBtn - remove all knobs, add the specific new one and load them back
+					for p in prefsBtn:
+						self.removeKnob(p)
+
+					for p in prefsBtn:
+						if listName==p.name():
+							prefs.remove(listName)
+							prefsBtn.remove(p)
+					
+					self.pk = nuke.Script_Knob(listName,listName)
+					prefsBtn.append(self.pk)
+					prefs.append(listName)
+
+					#refresh prefsBtn
+					i=0
+					for p in prefsBtn:
+						p.clearFlag(nuke.STARTLINE)
+						if i%5==0:
+							p.setFlag(nuke.STARTLINE)
+						self.addKnob(p)
+						i+=1
+					
+					self.prefsName.setValue("")
+				
+			else:
+				nuke.message("please enter a name for the list")
+
+		if knob.name()=="delete list":
+			deletePrefs(self)
+
+		if knob.name() == "open pref dir" or knob.name()=="open scripts dir":	
+			if knob.name() == "open pref dir":
+				direc = os.path.dirname(currentPref)
+			elif knob.name()== "open scripts dir":
+				direc = os.path.dirname(scriptsPath)
+			if os.path.isdir(direc):
 				try:
 					if platform.system() == "Windows":
-						os.startfile(excludeSetDir)
+						os.startfile(direc)
 					elif platform.system() == "Darwin":
-						subprocess.Popen(["open", excludeSetDir])
+						subprocess.Popen(["open", direc])
 					else:
-						subprocess.Popen(["xdg-open", excludeSetDir])
+						subprocess.Popen(["xdg-open", direc])
 				except:
-					nuke.message("error opening excludeSetDir")
+					nuke.message("error opening the dir")
 			else:
-				nuke.message("Couldn't find the excludeSet dir")
+				nuke.message("Couldn't find the dir")
 
+		if knob.name() in prefs:
+			#prefsknobs
+			prefFile = prefsDir+knob.name()+".txt"
+			if os.path.isfile(prefFile):
+				prefList = openFileReturnArr(prefFile)
+
+				#set new prefs
+				for pl in nuke.pluginList:
+					pl.setValue(True)
+					if pl.name() in prefList:
+						pl.setValue(False)
+
+			else:
+				nuke.message("Couldn't find the prefFile '%s'. No such file." % knob.name())
+			
 def addPMPanel():
-    global pm
-    pm = PluginManagerPanel()
-    return pm.addToPane()
+	global pm
+	pm = PluginManagerPanel()
+	return pm.addToPane()
 
 def init():
-	initExcludeSet()
+	initPL()
 	initScripts()
 
 def killNuke():

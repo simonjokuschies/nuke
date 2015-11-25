@@ -25,6 +25,10 @@
 import nuke
 
 def setRefFrame():
+	"""
+	set ref Frame to current positioners frame
+	"""
+	
 	sel = nuke.selectedNode()
 	if "Tracker" in sel.Class():
 		sel.knob("reference_frame").setValue(nuke.frame())
